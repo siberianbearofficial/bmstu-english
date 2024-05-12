@@ -153,7 +153,7 @@
         <div class="contents">
             <div class="contents__item">
                 <label class="form-label" id="label">Сюда текст должен подставиться автоматически - включите
-                    JavaScript</label class="form-label" >
+                    JavaScript</label>
                 <div>
                 <textarea type="email" class="form-field form-textarea" placeholder="Скопируйте сюда HTML" rows="3"
                           id="content"></textarea>
@@ -180,8 +180,13 @@
     const readyElement = document.getElementById('ready');
     const labelElement = document.getElementById('label');
 
-    let page = 1;  // 0 - page1, 1 - page2
+    let page = 1;
     setPage1();
+
+    function strip(str, charToRemove) {
+        const regex = new RegExp(`^${charToRemove}+|${charToRemove}+$`, 'g');
+        return str.replace(regex, '');
+    }
 
     function page1() {
         function extractQuestions(elements) {
@@ -236,11 +241,6 @@
             for (let i = 0; i < n; i++)
                 ready.push(s);
             return ready.join('');
-        }
-
-        function strip(str, charToRemove) {
-            const regex = new RegExp(`^${charToRemove}+|${charToRemove}+$`, 'g');
-            return str.replace(regex, '');
         }
 
         function splitQuestionAndUnderlinings(w) {
@@ -301,16 +301,105 @@
     }
 
     function page2() {
+        function extractTaskText(elements) {
+            const taskText = [];
+            for (let element of elements) {
+                const text = element.textContent.trim();
+                if (text)
+                    taskText.push(text);
+            }
+            return taskText;
+        }
+
+        function extractBlankOptions(elements) {
+            const blankOptions = [];
+            for (let element of elements) {
+                const text = element.textContent.trim();
+                if (text)
+                    blankOptions.push(text);
+            }
+            return blankOptions;
+        }
+
+        function onlyUnderlinings(w) {
+            for (let c of w)
+                if (c !== '_')
+                    return false;
+            return true;
+        }
+
+        function isDigit(str) {
+          return /^\d+$/.test(str);
+        }
+
+        function formatBlank(words, ind, blankOptions) {
+            console.log('formatBlank:', words, ind, blankOptions);
+            const blank = blankOptions[ind];
+            return onlyUnderlinings(words[words.length - 1]) ? blank : `${blank} ${strip(words[words.length - 1], '_')}`;
+        }
+
+        function packTaskTextWithOptions(taskText, blanksOptions) {
+            let blankIndex = 0;
+            const newTaskText = [];
+            for (let par of taskText) {
+                const words = par.trim().split(/\s+/);
+                const newWords = [];
+
+                let inBlank = [];
+                let blankStarted = false;
+                for (let word of words) {
+                    if (word && isDigit(word[0]) && word.includes('Blank'))
+                        blankStarted = true;
+                    else if (blankStarted && !word.includes('__'))
+                        inBlank.push(word);
+                    else if (blankStarted && word.includes('__')) {
+                        inBlank.push(word);
+                        blankStarted = false;
+                        newWords.push(formatBlank(inBlank, blankIndex, blanksOptions));
+                        blankIndex++;
+                        inBlank = [];
+                    }
+                    else
+                        newWords.push(word);
+                }
+                newTaskText.push(newWords.join(' '));
+            }
+            return newTaskText;
+        }
+
+        function extractTaskTextAndOptions(content) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(content, 'text/html');
+            const soup = doc.getElementById('page-content').getElementsByClassName('content');
+
+            const taskText = [];
+            const blanksOptions = [];
+            let ind = 0;
+            for (let element of soup) {
+                taskText.push(...extractTaskText(element.querySelectorAll('p')));
+
+                for (let selectElement of element.querySelectorAll('select')) {
+                    const blankOptions = extractBlankOptions(selectElement.querySelectorAll('option'));
+                    blanksOptions.push(`[${ind + 1}: ${blankOptions.join(', ')}]`);
+                    ind++;
+                }
+            }
+
+            return { taskText, blanksOptions };
+        }
 
         function parse() {
-            // ----- IN DEVELOPMENT YET -----
-
-            // const questionsAndAnswers = extractQuestionsAndAnswers(contentElement.value);
-            // console.log(questionsAndAnswers);
-            // const lines = packQuestionsWithAnswers(questionsAndAnswers.questions, questionsAndAnswers.answers);
-            // console.log(lines);
-            // readyElement.value = lines.join('\n');
-            readyElement.value = 'Эта страница еще в разработке';
+            if (contentElement.value) {
+                const taskTextAndOptions = extractTaskTextAndOptions(contentElement.value);
+                console.log(taskTextAndOptions);
+                const lines = packTaskTextWithOptions(taskTextAndOptions.taskText, taskTextAndOptions.blanksOptions);
+                const gptPrompt = 'Choose the best word to fill the gap. Write the answers each on new line in the ' +
+                    'format: n. chosen_word, where n is the number of the blank and chosen_word is your choice. ' +
+                    'NOTHING ELSE should be in the answer!';
+                readyElement.value = [gptPrompt, ...lines].join('\n');
+            }
+            else
+                readyElement.value = 'Вы точно не забыли вставить HTML слева?';
         }
 
         parse();
