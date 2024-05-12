@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>РК по английскому</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            border: none;
+            line-height: normal;
+            transition: all ease 0.1s;
+            box-sizing: border-box;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        aside, nav, footer, header, section, main {
+            display: block;
+        }
+
+        img {
+            vertical-align: top;
+        }
+
+        img, svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        input, textarea, button, select {
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+            background-color: transparent;
+        }
+
+        input::-ms-clear {
+            display: none;
+        }
+
+        button, input[type="submit"] {
+            display: inline-block;
+            box-shadow: none;
+            background: transparent none;
+            cursor: pointer;
+        }
+
+        input:focus, input:active,
+        button:focus, button:active {
+            outline: none;
+        }
+
+        button::-moz-focus-inner {
+            padding: 0;
+            border: 0;
+        }
+
+        label {
+            cursor: pointer;
+        }
+
+        legend {
+            display: block;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+        }
+    </style>
+    <style>
+        .container {
+            margin: 0 0 auto;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 50px 100px;
+
+            .container__header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+
+                .nav {
+                    display: flex;
+                    align-items: center;
+                    gap: 20px;
+                }
+            }
+
+            .container__main {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                flex: 1 1 auto;
+
+                .contents {
+                    display: flex;
+                    flex: 1 1 auto;
+                    justify-content: space-between;
+
+                    .contents__item {
+                        width: 49.5%;
+                        display: flex;
+                        flex-direction: column;
+
+                        div {
+                            flex: 1 1 auto;
+
+                            textarea {
+                                height: 100%;
+                                resize: none;
+                            }
+                        }
+                    }
+                }
+
+                button {
+                    margin: 0;
+                    height: 50px;
+                }
+            }
+
+            .container__footer {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://u-and-i.netlify.app/Components/u-and-i-v2.css">
+</head>
+<body>
+<div class="container">
+    <div class="container__header">
+        <h1>РК по английскому</h1>
+        <div class="nav">
+            <a class="link-text link-text-primary" onclick="setPage1()">Страница 1</a>
+            <a class="link-text link-text-primary" onclick="setPage2()">Страница 2</a>
+        </div>
+    </div>
+    <div class="container__main">
+        <div class="contents">
+            <div class="contents__item">
+                <label class="form-label" id="label">Сюда текст должен подставиться автоматически - включите JavaScript</label class="form-label" >
+                <div>
+                <textarea type="email" class="form-field form-textarea" placeholder="Скопируйте сюда HTML" rows="3"
+                          id="content"></textarea>
+                </div>
+            </div>
+            <div class="contents__item">
+                <label class="form-label">Результат</label>
+                <div>
+                <textarea type="email" class="form-field form-textarea" placeholder="Здесь будет результат" rows="3"
+                          id="ready" readonly></textarea>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn btn-solid-primary" onclick="parse()">Обработать</button>
+    </div>
+    <div class="container__footer">
+        <a href="https://github.com/siberianbearofficial" target="_blank" class="link-text link-text-secondary">Разработано
+            на ИУ7</a>
+    </div>
+</div>
+<script>
+    const contentElement = document.getElementById('content');
+    const readyElement = document.getElementById('ready');
+    const labelElement = document.getElementById('label');
+
+    let page = 1;  // 0 - page1, 1 - page2
+    setPage1();
+
+    function page1() {
+        function extractQuestions(elements) {
+            const questions = [];
+            for (let element of elements) {
+                const text = element.textContent.trim();
+                if (text)
+                    questions.push(text);
+            }
+            return questions;
+        }
+
+        function extractAnswers(elements) {
+            const answers = [];
+            for (let element of elements) {
+                const text = element.textContent.trim();
+                if (text)
+                    for (let a of text.split('\n'))
+                        answers.push(a.trim());
+            }
+            return answers.join('; ');
+        }
+
+        function extractQuestionsAndAnswers(content) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(content, 'text/html');
+            const soup = doc.getElementById('page-content').getElementsByClassName('content');
+
+            const questions = [];
+            const answers = [];
+
+            for (let element of soup) {
+                const questionElements = element.getElementsByClassName('qtext');
+                const answerElements = element.getElementsByClassName('answer');
+
+                questions.push(...extractQuestions(questionElements));
+                answers.push(extractAnswers(answerElements));
+            }
+
+            return {questions, answers};
+        }
+
+        function needSplitQuestionAndUnderlinings(w) {
+            for (let c of w)
+                if (c !== '_')
+                    return false;
+            return true;
+        }
+
+        function multiplyString(s, n) {
+            const ready = [];
+            for (let i = 0; i < n; i++)
+                ready.push(s);
+            return ready.join('');
+        }
+
+        function strip(str, charToRemove) {
+            const regex = new RegExp(`^${charToRemove}+|${charToRemove}+$`, 'g');
+            return str.replace(regex, '');
+        }
+
+        function splitQuestionAndUnderlinings(w) {
+            w = w.trim();
+            let underlinings = true;
+            let start_underlinings = true;
+            let start_count = 0;
+            let end_count = 0;
+
+            for (let el of w) {
+                if (el === '_' && underlinings && start_underlinings)
+                    start_count++;
+                else if (el === '_' && underlinings && !start_underlinings)
+                    end_count++;
+                else if (el !== '_')
+                    start_underlinings = false;
+            }
+
+            const new_q = [];
+            if (start_count)
+                new_q.push(multiplyString('_', start_count));
+            new_q.push(strip(w, '_'));
+            if (end_count)
+                new_q.append(multiplyString('_', end_count));
+            return new_q
+        }
+
+        function packQuestionsWithAnswers(questions, answers) {
+            const lines = [];
+            for (let i = 0; i < questions.length; i++) {
+                const new_question = [];
+                for (let w of questions[i].trim().split(/\s+/)) {
+                    if (questions[i].includes('_') && needSplitQuestionAndUnderlinings(w))
+                        new_question.push(...splitQuestionAndUnderlinings(w));
+                    else
+                        new_question.push(w.trim());
+                }
+                lines.push(`${i + 1}. ${new_question.join(" ")}`);
+                lines.push(answers[i]);
+            }
+            return lines;
+        }
+
+        function parse() {
+            const questionsAndAnswers = extractQuestionsAndAnswers(contentElement.value);
+            const lines = packQuestionsWithAnswers(questionsAndAnswers.questions, questionsAndAnswers.answers);
+            readyElement.value = lines.join('\n');
+        }
+
+        parse();
+    }
+
+    function page2() {
+        function parse() {
+            // ----- IN DEVELOPMENT YET -----
+
+            // const questionsAndAnswers = extractQuestionsAndAnswers(contentElement.value);
+            // console.log(questionsAndAnswers);
+            // const lines = packQuestionsWithAnswers(questionsAndAnswers.questions, questionsAndAnswers.answers);
+            // console.log(lines);
+            // readyElement.value = lines.join('\n');
+        }
+
+        parse();
+    }
+
+    function parse() {
+        if (page === 1)
+            page1();
+        else if (page === 2)
+            console.debug('page2');
+        else
+            console.error('no such page:', page);
+    }
+
+    function setPage1() {
+        page = 0;
+        labelElement.innerHTML = `HTML страницы c <b>ТЕСТОВОЙ ЧАСТЬЮ</b>`
+    }
+
+    function setPage2() {
+        page = 1;
+        labelElement.innerHTML = `HTML страницы c <b>ДЛИННЫМ ТЕКСТОМ</b>`
+    }
+</script>
+</body>
+</html>
