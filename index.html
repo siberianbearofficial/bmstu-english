@@ -152,7 +152,8 @@
     <div class="container__main">
         <div class="contents">
             <div class="contents__item">
-                <label class="form-label" id="label">Сюда текст должен подставиться автоматически - включите JavaScript</label class="form-label" >
+                <label class="form-label" id="label">Сюда текст должен подставиться автоматически - включите
+                    JavaScript</label class="form-label" >
                 <div>
                 <textarea type="email" class="form-field form-textarea" placeholder="Скопируйте сюда HTML" rows="3"
                           id="content"></textarea>
@@ -284,15 +285,23 @@
         }
 
         function parse() {
-            const questionsAndAnswers = extractQuestionsAndAnswers(contentElement.value);
-            const lines = packQuestionsWithAnswers(questionsAndAnswers.questions, questionsAndAnswers.answers);
-            readyElement.value = lines.join('\n');
+            if (contentElement.value) {
+                const questionsAndAnswers = extractQuestionsAndAnswers(contentElement.value);
+                const lines = packQuestionsWithAnswers(questionsAndAnswers.questions, questionsAndAnswers.answers);
+                const gptPrompt = 'Choose a, b or c to fill the gaps. Write the answers each on new line in the format: ' +
+                    'n) letter. answer, where n is the question number, letter is a, b or c and answer is the associated ' +
+                    'with the letter answer that fits the gap best. NOTHING ELSE should be in the answer!';
+                readyElement.value = [gptPrompt, ...lines].join('\n');
+            }
+            else
+                readyElement.value = 'Вы точно не забыли вставить HTML слева?';
         }
 
         parse();
     }
 
     function page2() {
+
         function parse() {
             // ----- IN DEVELOPMENT YET -----
 
@@ -301,6 +310,7 @@
             // const lines = packQuestionsWithAnswers(questionsAndAnswers.questions, questionsAndAnswers.answers);
             // console.log(lines);
             // readyElement.value = lines.join('\n');
+            readyElement.value = 'Эта страница еще в разработке';
         }
 
         parse();
