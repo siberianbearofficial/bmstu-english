@@ -333,7 +333,6 @@
         }
 
         function formatBlank(words, ind, blankOptions) {
-            console.log('formatBlank:', words, ind, blankOptions);
             const blank = blankOptions[ind];
             return onlyUnderlinings(words[words.length - 1]) ? blank : `${blank} ${strip(words[words.length - 1], '_')}`;
         }
@@ -391,7 +390,6 @@
         function parse() {
             if (contentElement.value) {
                 const taskTextAndOptions = extractTaskTextAndOptions(contentElement.value);
-                console.log(taskTextAndOptions);
                 const lines = packTaskTextWithOptions(taskTextAndOptions.taskText, taskTextAndOptions.blanksOptions);
                 const gptPrompt = 'Choose the best word to fill the gap. Write the answers each on new line in the ' +
                     'format: n. chosen_word, where n is the number of the blank and chosen_word is your choice. ' +
