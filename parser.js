@@ -18,8 +18,8 @@ function parseSingleTask1(taskElement) {
 function parseTasks2(taskElements) {
     const lines = [];
     const gptPrompt = 'Choose the best word to fill the gap. Write the answers each on new line in the ' +
-                    'format: n. chosen_word, where n is the number of the blank and chosen_word is your choice. ' +
-                    'NOTHING ELSE should be in the answer!';
+        'format: n. chosen_word, where n is the number of the blank and chosen_word is your choice. ' +
+        'NOTHING ELSE should be in the answer!';
     for (let taskElement of taskElements) {
         const number = extractNumber(taskElement);
         lines.push(gptPrompt, '', extractTextAndOptions(taskElement), '', '');
@@ -75,7 +75,10 @@ function extractQuestion(elements) {
         if (text)
             questions.push(text);
     }
-    return questions.join('');
+    let res = questions.join('');
+    while (res.includes('  '))
+        res = res.replace('  ', ' ');
+    return res;
 }
 
 function extractAnswers(elements) {
@@ -83,8 +86,16 @@ function extractAnswers(elements) {
     for (let element of elements) {
         const text = element.textContent.trim();
         if (text)
-            for (let a of text.split('\n'))
-                answers.push(a.trim());
+            for (let a of text.split('\n')) {
+                a = a.trim();
+                if (a) {
+                    const lastAnswer = answers[answers.length - 1];
+                    if (lastAnswer && lastAnswer.length <= 2 && lastAnswer.endsWith('.')) {
+                        answers[answers.length - 1] = lastAnswer + a;
+                    } else
+                        answers.push(a);
+                }
+            }
     }
     return answers.join('; ');
 }
