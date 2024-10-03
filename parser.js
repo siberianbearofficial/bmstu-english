@@ -1,14 +1,18 @@
 function parseTasks1(taskElements) {
     const lines = [];
     for (let taskElement of taskElements) {
-        const extracted = extractQuestionAndAnswers(taskElement);
-        const number = extractNumber(taskElement);
-        lines.push(`${number}. ${extracted.question}`, extracted.answers);
+        lines.push(...parseSingleTask1(taskElement));
     }
     const gptPrompt = 'Choose a, b or c to fill the gaps. Write the answers each on new line in the format: ' +
         'n) letter. answer, where n is the question number, letter is a, b or c and answer is the associated ' +
         'with the letter answer that fits the gap best. NOTHING ELSE should be in the answer!';
-    return [gptPrompt, ...lines];
+    return [gptPrompt, ...lines, ''];
+}
+
+function parseSingleTask1(taskElement) {
+    const extracted = extractQuestionAndAnswers(taskElement);
+    const number = extractNumber(taskElement);
+    return [`Task ${number}.`, extracted.question, extracted.answers];
 }
 
 function parseTasks2(taskElements) {
@@ -17,11 +21,15 @@ function parseTasks2(taskElements) {
                     'format: n. chosen_word, where n is the number of the blank and chosen_word is your choice. ' +
                     'NOTHING ELSE should be in the answer!';
     for (let taskElement of taskElements) {
-        console.log('task2');
         const number = extractNumber(taskElement);
         lines.push(gptPrompt, '', extractTextAndOptions(taskElement), '', '');
     }
-    return [...lines];
+    return [...lines, ''];
+}
+
+function parseSingleTask2(taskElement) {
+    const number = extractNumber(taskElement);
+    return [`Task ${number}.`, extractTextAndOptions(taskElement)];
 }
 
 function extractTextAndOptions(taskElement) {
@@ -103,29 +111,38 @@ function extractTasks(content) {
     const doc = parser.parseFromString(content, 'text/html');
     const soup = doc.getElementById('page-content').getElementsByClassName('que');
 
-    const tasks1 = [];
-    const tasks2 = [];
+    const tasks = [];
     let ind = 0;
     for (let element of soup) {
         if (element.getElementsByClassName('content')[0].querySelectorAll('select').length > 0) {
-            tasks2.push(element);
+            tasks.push({type: 2, element});
         } else {
-            tasks1.push(element)
+            tasks.push({type: 1, element})
         }
     }
 
-    return {tasks1, tasks2};
+    return tasks;
 }
 
 function parseAll(content) {
     const tasks = extractTasks(content);
     const lines = []
-    if (tasks.tasks1.length) {
-        lines.push(...parseTasks1(tasks.tasks1))
-    }
-    lines.push('', '')
-    if (tasks.tasks2.length) {
-        lines.push(...parseTasks2(tasks.tasks2))
+    // if (tasks.tasks1.length) {
+    //     lines.push(...parseTasks1(tasks.tasks1))
+    // }
+    // lines.push('', '')
+    // if (tasks.tasks2.length) {
+    //     lines.push(...parseTasks2(tasks.tasks2))
+    // }
+
+    for (let task of tasks) {
+        if (task.type === 1) {
+            console.log('task 1')
+            lines.push(...parseSingleTask1(task.element), '');
+        } else if (task.type === 2) {
+            console.log('task 2')
+            lines.push(...parseSingleTask2(task.element), '');
+        }
     }
 
     return lines.join('\n');
