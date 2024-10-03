@@ -147,6 +147,7 @@
         <div class="nav">
             <a class="link-text link-text-primary" onclick="setPage1()">Страница 1</a>
             <a class="link-text link-text-primary" onclick="setPage2()">Страница 2</a>
+            <a class="link-text link-text-primary" onclick="setAltParser()">Альтернативный парсер</a>
         </div>
     </div>
     <div class="container__main">
@@ -292,8 +293,7 @@
                     'n) letter. answer, where n is the question number, letter is a, b or c and answer is the associated ' +
                     'with the letter answer that fits the gap best. NOTHING ELSE should be in the answer!';
                 readyElement.value = [gptPrompt, ...lines].join('\n');
-            }
-            else
+            } else
                 readyElement.value = 'Вы точно не забыли вставить HTML слева?';
         }
 
@@ -329,7 +329,7 @@
         }
 
         function isDigit(str) {
-          return /^\d+$/.test(str);
+            return /^\d+$/.test(str);
         }
 
         function formatBlank(words, ind, blankOptions) {
@@ -357,8 +357,7 @@
                         newWords.push(formatBlank(inBlank, blankIndex, blanksOptions));
                         blankIndex++;
                         inBlank = [];
-                    }
-                    else
+                    } else
                         newWords.push(word);
                 }
                 newTaskText.push(newWords.join(' '));
@@ -375,6 +374,7 @@
             const blanksOptions = [];
             let ind = 0;
             for (let element of soup) {
+                console.log(element, element.querySelectorAll('select').length);
                 taskText.push(...extractTaskText(element.querySelectorAll('p')));
 
                 for (let selectElement of element.querySelectorAll('select')) {
@@ -384,7 +384,7 @@
                 }
             }
 
-            return { taskText, blanksOptions };
+            return {taskText, blanksOptions};
         }
 
         function parse() {
@@ -395,12 +395,18 @@
                     'format: n. chosen_word, where n is the number of the blank and chosen_word is your choice. ' +
                     'NOTHING ELSE should be in the answer!';
                 readyElement.value = [gptPrompt, ...lines].join('\n');
-            }
-            else
+            } else
                 readyElement.value = 'Вы точно не забыли вставить HTML слева?';
         }
 
         parse();
+    }
+
+    function page3() {
+        if (contentElement.value) {
+            readyElement.value = parseAll(contentElement.value);
+        } else
+            readyElement.value = 'Вы точно не забыли вставить HTML слева?';
     }
 
     function parse() {
@@ -408,6 +414,8 @@
             page1();
         else if (page === 2)
             page2();
+        else if (page === 3)
+            page3();
         else
             console.error('no such page:', page);
     }
@@ -421,6 +429,12 @@
         page = 2;
         labelElement.innerHTML = `HTML страницы c <b>ДЛИННЫМ ТЕКСТОМ</b>`
     }
+
+    function setAltParser() {
+        page = 3;
+        labelElement.innerHTML = `HTML любой страницы`
+    }
 </script>
+<script src="parser.js"></script>
 </body>
 </html>
